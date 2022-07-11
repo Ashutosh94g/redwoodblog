@@ -5,19 +5,39 @@ import {
   Label,
   Submit,
   TextAreaField,
+  FormError,
+  useForm,
 } from '@redwoodjs/forms'
-import { MetaTags } from '@redwoodjs/web'
+import { MetaTags, useMutation } from '@redwoodjs/web'
+import { toast, Toaster } from '@redwoodjs/web/dist/toast'
+
+const CREATE_CONTACT = gql`
+  mutation CreateContactMutation($input: CreateContactInput!) {
+    createContact(input: $input) {
+      id
+    }
+  }
+`
 
 const ContactPage = () => {
+  const formMethods = useForm({ mode: 'onBlur' })
+  const [create, { loading, error }] = useMutation(CREATE_CONTACT, {
+    onCompleted: () => {
+      toast.success('Thankyou for your Submission!')
+      formMethods.reset()
+    },
+  })
   const onSubmitHandler = (data) => {
-    console.log(data)
+    create({ variables: { input: data } })
   }
 
   return (
     <>
       <MetaTags title="Contact" description="Contact page" />
 
-      <Form onSubmit={onSubmitHandler} config={{ mode: 'onBlur' }}>
+      <Toaster />
+      <Form onSubmit={onSubmitHandler} error={error} formMethods={formMethods}>
+        <FormError error={error} wrapperClassName="form-error" />
         <Label name="name" errorClassName="error">
           Name
         </Label>
@@ -53,7 +73,7 @@ const ContactPage = () => {
           errorClassName="error"
         />
         <FieldError name="message" className="error" />
-        <Submit>Submit</Submit>
+        <Submit disabled={loading}>Submit</Submit>
       </Form>
     </>
   )
